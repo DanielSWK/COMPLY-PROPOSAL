@@ -8,11 +8,19 @@ halaman berulang, spasi ganda), TANPA menghilangkan informasi struktural
 struktural itu dibutuhkan oleh modul segmentasi unit (Bagian B).
 
 Asumsi:
-- Semua file input SUDAH melalui tahap redaksi PII terpisah (nama, NIM,
-  tanda tangan sudah dihapus/dihitamkan, nama file sudah berupa proposal_id
-  seperti "P001"). Modul ini tidak melakukan deteksi/redaksi PII apa pun,
-  tetapi tetap mendeteksi sisa placeholder redaksi (mis. "[DIREDAKSI]") agar
-  tidak diperlakukan sebagai isi proposal yang valid oleh tahap berikutnya.
+- PEMBARUAN: tahap redaksi PII terpisah TIDAK dipakai di implementasi ini
+  (keputusan peneliti). Modul ini TIDAK melakukan deteksi/redaksi PII apa
+  pun, dan data yang diproses TIDAK dianonimkan — nama, NIM, tanda tangan,
+  dan identitas lain yang ada di dokumen asli akan ikut masuk APA ADANYA
+  ke `teks_unit` pada output JSONL (Bagian G). Kalau perlindungan privasi
+  tetap dibutuhkan (mis. sebelum data dibagikan ke pihak lain), itu harus
+  ditangani terpisah di luar modul ini — JANGAN anggap pipeline ini sudah
+  menanganinya.
+- Deteksi placeholder redaksi (mis. "[DIREDAKSI]") di bawah tetap
+  dipertahankan sebagai jaring pengaman murni (berjaga-jaga kalau ada sisa
+  penanda manual di sebagian dokumen), TAPI karena tahap redaksi tidak
+  lagi dipakai secara sistematis, jangan mengandalkan mekanisme ini
+  sebagai bentuk perlindungan PII yang sebenarnya.
 - Ekstraksi metadata tata letak (font, margin) BUKAN tanggung jawab modul
   ini — itu ada di modul terpisah untuk jalur JM (Bagian C), karena JM wajib
   membaca langsung dari file asli, bukan dari hasil ekstraksi teks di sini.
@@ -137,7 +145,9 @@ def ekstrak_docx(path: PathLike) -> Dict[str, Any]:
     """Mengekstrak teks terstruktur dari file .docx.
 
     Input:
-        path: path ke file .docx (sudah diasumsikan PII-nya sudah diredaksi).
+        path: path ke file .docx. PII di dalam dokumen TIDAK diredaksi oleh
+            modul ini maupun tahap sebelumnya (lihat catatan asumsi di
+            docstring modul) — akan ikut apa adanya di `teks_penuh`/`unit_teks`.
 
     Output (dict):
         {
@@ -383,7 +393,9 @@ def ekstrak_pdf(path: PathLike) -> Dict[str, Any]:
     """Mengekstrak teks terstruktur dari file .pdf.
 
     Input:
-        path: path ke file .pdf (sudah diasumsikan PII-nya sudah diredaksi).
+        path: path ke file .pdf. PII di dalam dokumen TIDAK diredaksi oleh
+            modul ini maupun tahap sebelumnya (lihat catatan asumsi di
+            docstring modul) — akan ikut apa adanya di `teks_penuh`/`unit_teks`.
 
     Output (dict):
         {

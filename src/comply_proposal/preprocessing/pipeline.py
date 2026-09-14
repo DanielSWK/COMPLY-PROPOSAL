@@ -215,8 +215,12 @@ def proses_folder_proposal(
 
     Input:
         folder_proposal: folder berisi file proposal. `proposal_id` diambil
-            dari nama file TANPA ekstensi (sesuai konvensi redaksi PII:
-            nama file sudah diganti jadi proposal_id spt "P001").
+            dari nama file TANPA ekstensi (mis. "P001.docx" -> proposal_id
+            "P001") — pastikan skema penamaan file ini konsisten dengan
+            proposal_id di ground truth. CATATAN: tahap redaksi PII terpisah
+            TIDAK dipakai di implementasi ini (lihat catatan asumsi di
+            docstring Bagian A/`ekstraksi_teks.py`) — isi file proposal
+            TIDAK dianonimkan oleh pipeline ini.
         path_ground_truth_excel: workbook ground truth (dibaca sekali via
             `muat_ground_truth`, dipakai untuk semua proposal).
         metadata_proposal: dict proposal_id -> metadata (mis. dari
