@@ -54,7 +54,7 @@ class EkstraksiError(Exception):
 # ---------------------------------------------------------------------------
 
 _POLA_SPASI_UNICODE = re.compile(
-    "[\u00A0\u2000-\u200A\u202F\u3000]"
+    "[\u00A0\u2000-\u200A\u202F\u3000\u200B]"
 )
 _POLA_SPASI_GANDA = re.compile(r"[ \t]{2,}")
 _POLA_BARIS_KOSONG_BERLEBIH = re.compile(r"\n{3,}")
@@ -82,7 +82,14 @@ def _normalisasi_teks(teks: str) -> str:
     Langkah (sengaja terbatas & didokumentasikan, karena teks ini juga
     dipakai untuk pemeriksaan BHS/FMT — normalisasi berlebihan bisa
     mengaburkan pelanggaran yang sebenarnya):
-    1. Samakan berbagai karakter spasi unicode (nbsp, dll.) jadi spasi biasa.
+    1. Samakan berbagai karakter spasi unicode (nbsp, dll.) jadi spasi biasa,
+       TERMASUK zero-width space (U+200B) -- ditemukan empiris (2026-09-18)
+       pada PDF hasil ekspor tool tertentu yang menyisipkan U+200B sebagai
+       SATU-SATUNYA pemisah antar-kata (tanpa spasi biasa sama sekali, mis.
+       "1.1​​Latar​​Belakang"). Karena U+200B bukan
+       whitespace menurut `\s` regex Python, ini bikin SEMUA pola heading
+       Bagian B/C gagal total pada dokumen yang terkena (bukan cuma fallback
+       ke pola lebih lemah -- headingnya sungguh tidak ketemu sama sekali).
     2. Ratakan spasi/tab ganda dalam satu baris jadi satu spasi.
     3. Samakan tanda kutip pintar jadi tanda kutip lurus.
     4. Batasi baris kosong berturut-turut maksimal satu (antar paragraf).

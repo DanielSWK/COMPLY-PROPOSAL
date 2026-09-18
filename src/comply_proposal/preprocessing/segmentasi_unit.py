@@ -119,11 +119,25 @@ _PANJANG_MAKS_BARIS_FALLBACK = 120
 _AKHIRAN_BUKAN_HEADING = (".", ",", ";")
 _AWALAN_GAYA_HEADING = ("heading", "judul")  # "Judul" = lokalisasi Indonesia utk style Word
 
+# Baris entri Daftar Isi (mis. "1.1 Latar Belakang ................... 3") secara
+# tekstual cocok PERSIS dengan pola heading unit yang sebenarnya -- tanpa
+# pengecualian ini, entri Daftar Isi akan "membajak" anchor unit tsb (karena
+# anchor pertama yang menang) sebelum heading asli di badan dokumen tercapai,
+# membuat teks unit itu berisi baris Daftar Isi, BUKAN paragraf sungguhan.
+# Ditemukan empiris (2026-09-19) pada ~29% proposal riil yang diuji peneliti.
+# Titik-titik penuntun (dot leader) sepanjang ini praktis tidak pernah muncul
+# di prosa biasa, jadi dipakai sebagai penanda "ini entri Daftar Isi, bukan
+# heading" -- baris yang cocok langsung dianggap BUKAN kandidat heading sama
+# sekali, apa pun isinya.
+_POLA_ENTRI_DAFTAR_ISI = re.compile(r"\.{4,}")
+
 
 def _cari_unit_untuk_baris(teks_baris: str, gaya: Optional[str]) -> Optional[Tuple[str, str]]:
     """Mencoba mencocokkan satu baris/paragraf dengan pola heading salah satu unit.
 
     Prioritas pencocokan (berhenti di percobaan pertama yang berhasil):
+    0. Baris berpola entri Daftar Isi (titik penuntun panjang) -> SELALU None,
+       tidak pernah dianggap heading (lihat catatan `_POLA_ENTRI_DAFTAR_ISI`).
     1. Pola ketat: awalan nomor/bab + kata kunci -> metode "heading_bernomor".
     2. Kalau gaya paragraf menandakan heading Word (Heading */Judul *) ->
        coba pola longgar (tanpa syarat nomor) -> metode "heading_gaya".
@@ -134,6 +148,8 @@ def _cari_unit_untuk_baris(teks_baris: str, gaya: Optional[str]) -> Optional[Tup
     """
     baris = teks_baris.strip()
     if not baris:
+        return None
+    if _POLA_ENTRI_DAFTAR_ISI.search(baris):
         return None
 
     for unit_id in _KATA_KUNCI_UNIT:
