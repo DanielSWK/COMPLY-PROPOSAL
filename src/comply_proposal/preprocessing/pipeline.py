@@ -309,7 +309,8 @@ def tulis_output_jsonl(record_list: List[Dict[str, Any]], path_output: PathLike)
     Field per record mengikuti keluaran `gabungkan_teks_dan_ground_truth`
     (Bagian D): proposal_id, unit_id, bahasa_asli, format_asli, teks_unit,
     metadata_jm, status_ground_truth, kode_pelanggaran, dasar_pedoman,
-    catatan_ekstraksi. File ini yang dikonsumsi pipeline RAG.
+    bukti, keyakinan, anotator, status_adjudikasi, catatan_ekstraksi.
+    File ini yang dikonsumsi pipeline RAG.
     """
     path_output = Path(path_output)
     with path_output.open("w", encoding="utf-8") as f:
