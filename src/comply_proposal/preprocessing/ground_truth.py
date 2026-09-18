@@ -8,22 +8,25 @@ Dua tanggung jawab:
    Bagian B (+ metadata JM Bagian C bila relevan) dengan ground truth,
    menghasilkan satu record per (proposal_id, unit_id).
 
-PENTING — batasan sumber kebenaran:
-Saya (asisten) TIDAK punya akses ke skema 11-kolom literal dari Panduan
-Anotasi dan Taksonomi Pelanggaran v0.2, ke daftar lengkap ~25 kode
-taksonomi aktif, maupun ke workbook ground truth aktual Anda. Yang saya
-tahu dari percakapan hanyalah: kategori kode = KEL/ISI/ANG/KON/ADM/FMT/BHS,
-nilai status khusus = SESUAI/NA-01/NA-02/NA-03, dan 4 jalur deteksi =
-JP/JC/JD/JM. Karena itu:
-- `PETA_KOLOM_ANOTASI_DEFAULT` di bawah adalah TEBAKAN nama kolom yang
-  masuk akal, BUKAN dikutip dari skema 11-kolom asli. WAJIB disesuaikan
-  lewat parameter `peta_kolom` ke nama kolom sebenarnya di file Anda.
-- Validasi `kode_pelanggaran` secara default hanya memeriksa POLA
-  ("<KATEGORI>-<2 digit>" atau SESUAI/NA-0X), BUKAN keanggotaan di daftar
-  ~25 kode aktif yang sebenarnya (karena saya tidak punya daftar itu).
-  Kalau Anda sudah punya daftar kode aktif yang valid, berikan lewat
-  parameter `kode_taksonomi_valid` supaya validasinya jadi keanggotaan
-  set yang ketat, bukan sekadar pola.
+PEMBARUAN (2026-09-18) — sumber kebenaran terkonfirmasi:
+Setelah memeriksa langsung workbook ground truth asli peneliti (sheet
+"Referensi" dan "Anotasi_Gabungan"), dua hal di bawah ini SUDAH TIDAK
+lagi tebakan, melainkan dikonfirmasi dari data asli:
+- `KODE_TAKSONOMI_AKTIF_DEFAULT`: 21 kode taksonomi yang benar-benar aktif
+  (dikutip dari sheet "Referensi", kolom "DAFTAR KODE PELANGGARAN", status
+  "AKTIF" — mengecualikan FMT-03 & BHS-02 yang eksplisit ditandai
+  dinonaktifkan/"gunakan NA-03"). Ini sekarang jadi DEFAULT `muat_ground_truth`,
+  bukan lagi opsional.
+- `PETA_KOLOM_ANOTASI_DEFAULT` & `nama_sheet="Anotasi_Gabungan"`: nama
+  kolom dan nama sheet di bawah sekarang mencerminkan struktur ASLI
+  workbook peneliti (proposal_id, unit_id, kode_pelanggaran, bukti,
+  dasar_pedoman, keyakinan, anotator, catatan, status_adjudikasi).
+
+Catatan: ini dikonfirmasi untuk WORKBOOK SPESIFIK peneliti ini (skripsi
+ini), bukan klaim skema 11-kolom resmi Panduan Anotasi v0.2 berlaku
+universal. Kalau workbook lain/versi lebih baru punya struktur berbeda,
+tetap gunakan parameter `peta_kolom`/`nama_sheet`/`kode_taksonomi_valid`
+untuk menyesuaikan — jangan asumsikan default ini akan selalu cocok.
 
 Asumsi lain:
 - Satu baris di sheet "Anotasi" = satu instans anotasi untuk satu
@@ -39,7 +42,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import AbstractSet, Any, Dict, FrozenSet, List, Optional, Set, Tuple, Union
 
 import pandas as pd
 
@@ -70,9 +73,32 @@ PETA_KOLOM_ANOTASI_DEFAULT: Dict[str, str] = {
     "dasar_pedoman": "dasar_pedoman",
     "tanggal_anotasi": "tanggal_anotasi",
     "catatan": "catatan",
+    # Ditambahkan setelah memeriksa workbook asli (lihat "PEMBARUAN" di
+    # docstring modul) — semua opsional, dilewati kalau kolomnya tidak ada.
+    "bukti": "bukti",
+    "keyakinan": "keyakinan",
+    "anotator": "anotator",
+    "status_adjudikasi": "status_adjudikasi",
 }
 
 _KOLOM_WAJIB = ("proposal_id", "unit_id", "kode_pelanggaran")
+
+# Dikutip langsung dari sheet "Referensi" workbook ground truth peneliti
+# (kolom "DAFTAR KODE PELANGGARAN", status "AKTIF"). FMT-03 dan BHS-02
+# SENGAJA tidak disertakan -- keduanya ditandai eksplisit "dinonaktifkan,
+# gunakan NA-03" di sheet yang sama. frozenset supaya aman dipakai sbg
+# nilai default parameter (immutable, tidak kena masalah mutable default).
+KODE_TAKSONOMI_AKTIF_DEFAULT: FrozenSet[str] = frozenset(
+    {
+        "KEL-01", "KEL-02", "KEL-03", "KEL-04", "KEL-05", "KEL-06",
+        "ISI-01", "ISI-02", "ISI-03",
+        "ANG-01", "ANG-02",
+        "KON-01", "KON-02", "KON-03", "KON-04",
+        "ADM-01", "ADM-02", "ADM-04",
+        "FMT-01", "FMT-02", "FMT-04",
+        "BHS-01",
+    }
+)
 
 _STATUS_KHUSUS: Set[str] = {"SESUAI", "NA-01", "NA-02", "NA-03"}
 _POLA_KODE_TAKSONOMI = re.compile(r"^(KEL|ISI|ANG|KON|ADM|FMT|BHS)-\d{2}$")
@@ -80,7 +106,7 @@ _POLA_JALUR_DETEKSI = re.compile(r"^(JP|JC|JD|JM)$", re.IGNORECASE)
 _POLA_DELIMITER_MULTI_NILAI = re.compile(r"[,;]\s*")
 
 
-def _adalah_kode_valid(kode: str, kode_taksonomi_valid: Optional[Set[str]]) -> bool:
+def _adalah_kode_valid(kode: str, kode_taksonomi_valid: Optional[AbstractSet[str]]) -> bool:
     """True jika `kode` adalah status khusus, ATAU kode taksonomi yang dikenali.
 
     Kalau `kode_taksonomi_valid` diberikan, dipakai sebagai keanggotaan set
@@ -104,6 +130,18 @@ def _pecah_nilai_multi(nilai: Any) -> List[str]:
     return [bagian.strip() for bagian in _POLA_DELIMITER_MULTI_NILAI.split(teks) if bagian.strip()]
 
 
+def _ambil_nilai_tunggal(nilai: Any) -> Optional[str]:
+    """Mengambil satu sel sebagai string tunggal APA ADANYA (TIDAK dipecah
+    koma/titik-koma seperti `_pecah_nilai_multi`) -- dipakai untuk kolom
+    teks bebas/kategorikal (mis. `bukti`, `keyakinan`) yang bisa secara sah
+    mengandung koma sbg tanda baca biasa, bukan pemisah multi-nilai.
+    """
+    if nilai is None or pd.isna(nilai):
+        return None
+    teks = str(nilai).strip()
+    return teks or None
+
+
 # ---------------------------------------------------------------------------
 # D1: muat_ground_truth
 # ---------------------------------------------------------------------------
@@ -112,8 +150,8 @@ def _pecah_nilai_multi(nilai: Any) -> List[str]:
 def muat_ground_truth(
     path_excel: PathLike,
     peta_kolom: Optional[Dict[str, str]] = None,
-    kode_taksonomi_valid: Optional[Set[str]] = None,
-    nama_sheet: str = "Anotasi",
+    kode_taksonomi_valid: Optional[AbstractSet[str]] = KODE_TAKSONOMI_AKTIF_DEFAULT,
+    nama_sheet: str = "Anotasi_Gabungan",
 ) -> pd.DataFrame:
     """Memuat & memvalidasi sheet ground truth dari workbook Excel.
 
@@ -121,12 +159,16 @@ def muat_ground_truth(
         path_excel: path ke workbook ground truth (.xlsx).
         peta_kolom: pemetaan nama kolom logis -> nama kolom aktual di file
             Anda (mengganti sebagian/seluruh `PETA_KOLOM_ANOTASI_DEFAULT`).
-            WAJIB disesuaikan kalau nama kolom asli berbeda dari tebakan
-            default (lihat catatan kalibrasi di docstring modul).
-        kode_taksonomi_valid: set kode taksonomi aktif yang sudah pasti
-            benar (dari Panduan v0.2). Kalau None, validasi kode jatuh ke
-            pemeriksaan pola generik (lebih longgar, lihat docstring modul).
-        nama_sheet: nama sheet ground truth di workbook (default "Anotasi").
+            Default-nya sudah cocok utk workbook peneliti (lihat "PEMBARUAN"
+            di docstring modul); sesuaikan kalau workbook Anda berbeda.
+        kode_taksonomi_valid: set kode taksonomi aktif yang dipakai untuk
+            validasi keanggotaan ketat. Default `KODE_TAKSONOMI_AKTIF_DEFAULT`
+            (21 kode aktif asli, lihat docstring modul). Pass `None` secara
+            eksplisit untuk kembali ke validasi pola generik yang lebih
+            longgar (kalau memang perlu memproses workbook dgn daftar kode
+            berbeda yang belum diketahui).
+        nama_sheet: nama sheet ground truth di workbook (default
+            "Anotasi_Gabungan", sesuai workbook peneliti).
 
     Output:
         pandas.DataFrame — semua baris asli TETAP disertakan apa adanya
@@ -298,8 +340,14 @@ def gabungkan_teks_dan_ground_truth(
             "status_ground_truth": "PELANGGARAN"|"SESUAI"|"NA-01"|"NA-02"|"NA-03"|"TIDAK_ADA_ANOTASI",
             "kode_pelanggaran": list[str],      # kosong kalau bukan PELANGGARAN
             "dasar_pedoman": list[str],         # rujukan Bab/Pasal/ayat, gabungan semua baris terkait
-                                                  # unit ini (TIDAK dijamin berpasangan 1:1 dgn tiap kode
-                                                  # kalau satu sel berisi banyak kode sekaligus)
+            "bukti": list[str],                  # kutipan/evidence per baris anotasi terkait unit ini
+            "keyakinan": list[str],              # mis. "Tinggi"/"Sedang"/"Rendah", satu per baris
+            "anotator": list[str],               # mis. "A1"/"A2"/"A1 + A2", satu per baris
+            "status_adjudikasi": list[str],      # mis. "Disepakati"/"Diubah", satu per baris (kalau kolomnya ada & terisi)
+                                                  # ^ keempat list di atas (dasar_pedoman s.d. status_adjudikasi)
+                                                  # dikumpulkan APA ADANYA per baris ground truth yang cocok,
+                                                  # TIDAK dijamin berpasangan 1:1 dgn tiap kode di 'kode_pelanggaran'
+                                                  # kalau satu baris berisi banyak kode sekaligus dalam satu sel.
             "metadata_jm": dict | None,          # hanya diisi utk unit_id == "U00"
             "catatan_ekstraksi": str | None,     # gabungan warning Bagian B + masalah validasi GT
         }
@@ -313,6 +361,10 @@ def gabungkan_teks_dan_ground_truth(
     kolom_unit_id = peta["unit_id"]
     kolom_kode = peta["kode_pelanggaran"]
     kolom_dasar = peta.get("dasar_pedoman")
+    kolom_bukti = peta.get("bukti")
+    kolom_keyakinan = peta.get("keyakinan")
+    kolom_anotator = peta.get("anotator")
+    kolom_status_adjudikasi = peta.get("status_adjudikasi")
 
     for kolom in (kolom_proposal_id, kolom_unit_id, kolom_kode):
         if kolom not in gt_dataframe.columns:
@@ -339,17 +391,40 @@ def gabungkan_teks_dan_ground_truth(
 
         semua_nilai_kode: List[str] = []
         daftar_dasar: List[str] = []
+        daftar_bukti: List[str] = []
+        daftar_keyakinan: List[str] = []
+        daftar_anotator: List[str] = []
+        daftar_status_adjudikasi: List[str] = []
         masalah_gt_unit: List[str] = []
         for _, baris in baris_unit.iterrows():
             semua_nilai_kode.extend(_pecah_nilai_multi(baris.get(kolom_kode)))
             if kolom_dasar and kolom_dasar in gt_dataframe.columns:
-                for nilai_dasar in _pecah_nilai_multi(baris.get(kolom_dasar)):
-                    daftar_dasar.append(nilai_dasar)
+                daftar_dasar.extend(_pecah_nilai_multi(baris.get(kolom_dasar)))
+            if kolom_bukti and kolom_bukti in gt_dataframe.columns:
+                nilai = _ambil_nilai_tunggal(baris.get(kolom_bukti))
+                if nilai:
+                    daftar_bukti.append(nilai)
+            if kolom_keyakinan and kolom_keyakinan in gt_dataframe.columns:
+                nilai = _ambil_nilai_tunggal(baris.get(kolom_keyakinan))
+                if nilai:
+                    daftar_keyakinan.append(nilai)
+            if kolom_anotator and kolom_anotator in gt_dataframe.columns:
+                nilai = _ambil_nilai_tunggal(baris.get(kolom_anotator))
+                if nilai:
+                    daftar_anotator.append(nilai)
+            if kolom_status_adjudikasi and kolom_status_adjudikasi in gt_dataframe.columns:
+                nilai = _ambil_nilai_tunggal(baris.get(kolom_status_adjudikasi))
+                if nilai:
+                    daftar_status_adjudikasi.append(nilai)
             if "_masalah_validasi" in gt_dataframe.columns:
                 masalah_gt_unit.extend(baris.get("_masalah_validasi") or [])
 
         status_gt, kode_pelanggaran = _ringkas_status_dan_kode(semua_nilai_kode)
         daftar_dasar_unik = list(dict.fromkeys(daftar_dasar))
+        daftar_bukti_unik = list(dict.fromkeys(daftar_bukti))
+        daftar_keyakinan_unik = list(dict.fromkeys(daftar_keyakinan))
+        daftar_anotator_unik = list(dict.fromkeys(daftar_anotator))
+        daftar_status_adjudikasi_unik = list(dict.fromkeys(daftar_status_adjudikasi))
 
         catatan_bagian: List[str] = []
         if catatan_segmentasi:
@@ -371,6 +446,10 @@ def gabungkan_teks_dan_ground_truth(
                 "status_ground_truth": status_gt,
                 "kode_pelanggaran": kode_pelanggaran,
                 "dasar_pedoman": daftar_dasar_unik,
+                "bukti": daftar_bukti_unik,
+                "keyakinan": daftar_keyakinan_unik,
+                "anotator": daftar_anotator_unik,
+                "status_adjudikasi": daftar_status_adjudikasi_unik,
                 "metadata_jm": metadata_jm if unit_id == "U00" else None,
                 "catatan_ekstraksi": "; ".join(catatan_bagian) if catatan_bagian else None,
             }
