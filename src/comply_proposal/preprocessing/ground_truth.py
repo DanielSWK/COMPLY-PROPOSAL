@@ -18,9 +18,14 @@ lagi tebakan, melainkan dikonfirmasi dari data asli:
   dinonaktifkan/"gunakan NA-03"). Ini sekarang jadi DEFAULT `muat_ground_truth`,
   bukan lagi opsional.
 - `PETA_KOLOM_ANOTASI_DEFAULT` & `nama_sheet="Anotasi_Gabungan"`: nama
-  kolom dan nama sheet di bawah sekarang mencerminkan struktur ASLI
-  workbook peneliti (proposal_id, unit_id, kode_pelanggaran, bukti,
-  dasar_pedoman, keyakinan, anotator, catatan, status_adjudikasi).
+  kolom, urutan, dan nama sheet di bawah mengikuti PERSIS penyesuaian
+  yang sudah diuji peneliti langsung di Colab (proposal_id, unit_id,
+  kode_pelanggaran, status, bukti, dasar_pedoman, keyakinan, anotator,
+  catatan) — termasuk `status` sebagai kolom WAJIB (`_KOLOM_WAJIB`),
+  meskipun `gabungkan_teks_dan_ground_truth` sendiri tidak memakai nilai
+  kolom `status` (statusnya tetap diturunkan dari `kode_pelanggaran`,
+  lihat `_ringkas_status_dan_kode` — sudah dicek 100% konsisten dengan
+  kolom `status` pada workbook asli).
 
 Catatan: ini dikonfirmasi untuk WORKBOOK SPESIFIK peneliti ini (skripsi
 ini), bukan klaim skema 11-kolom resmi Panduan Anotasi v0.2 berlaku
@@ -69,19 +74,15 @@ PETA_KOLOM_ANOTASI_DEFAULT: Dict[str, str] = {
     "proposal_id": "proposal_id",
     "unit_id": "unit_id",
     "kode_pelanggaran": "kode_pelanggaran",
-    "jalur_deteksi": "jalur_deteksi",
-    "dasar_pedoman": "dasar_pedoman",
-    "tanggal_anotasi": "tanggal_anotasi",
-    "catatan": "catatan",
-    # Ditambahkan setelah memeriksa workbook asli (lihat "PEMBARUAN" di
-    # docstring modul) — semua opsional, dilewati kalau kolomnya tidak ada.
+    "status": "status",
     "bukti": "bukti",
+    "dasar_pedoman": "dasar_pedoman",
     "keyakinan": "keyakinan",
     "anotator": "anotator",
-    "status_adjudikasi": "status_adjudikasi",
+    "catatan": "catatan",
 }
 
-_KOLOM_WAJIB = ("proposal_id", "unit_id", "kode_pelanggaran")
+_KOLOM_WAJIB = ("proposal_id", "unit_id", "status", "kode_pelanggaran")
 
 # Dikutip langsung dari sheet "Referensi" workbook ground truth peneliti
 # (kolom "DAFTAR KODE PELANGGARAN", status "AKTIF"). FMT-03 dan BHS-02
