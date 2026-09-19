@@ -15,6 +15,14 @@ dari Pedoman v0.2. Peneliti WAJIB mengkalibrasi ulang tabel ini terhadap
 teks asli Pedoman v0.2 dan sampel proposal riil sebelum dipakai untuk hasil
 skripsi — jangan anggap tabel ini sudah final.
 
+Cakupan bahasa: fokus penelitian ini adalah proposal berbahasa Indonesia;
+proposal berbahasa Inggris dipertahankan sebagai instans uji pelanggaran
+BHS-01. `_KATA_KUNCI_UNIT` mencakup padanan kata kunci untuk kedua bahasa,
+diambil dari pola heading pada proposal Inggris yang sempat diperiksa
+peneliti (2026-09-19) -- sama seperti versi Indonesia, tetap WAJIB
+dikalibrasi ulang terhadap sampel yang lebih luas sebelum dipakai untuk
+hasil skripsi.
+
 Asumsi:
 - Input `teks_terstruktur` adalah dict keluaran `ekstrak_docx`/`ekstrak_pdf`
   (Bagian A), BUKAN path file mentah.
@@ -73,37 +81,73 @@ ID_UNIT_VALID: Set[str] = {uid for uid, _ in DAFTAR_UNIT}
 _POLA_AWALAN_NOMOR = r"^\s*(bab\s+)?(\d+(\.\d+){0,3}|[ivxlcdm]+)[.\)]?\s+"
 
 _KATA_KUNCI_UNIT: Dict[str, List[str]] = {
-    "U01": [r"sampul"],
-    "U02": [r"daftar\s+isi"],
-    "U03": [r"latar\s+belakang"],
+    "U01": [r"sampul", r"cover"],
+    "U02": [r"daftar\s+isi", r"table\s+of\s+contents", r"contents"],
+    "U03": [r"latar\s+belakang", r"background"],
     "U04": [
         r"maksud.{0,20}tujuan",
         r"tujuan.{0,20}sasaran",
         r"maksud\s+dan\s+tujuan",
+        r"event\s+purpose",
+        r"purpose\s+and\s+objectives?",
+        r"aims?\s+and\s+objectives?",
+        r"objectives?",
     ],
-    "U05": [r"indikator\s+keberhasilan"],
-    "U06": [r"nama\s+kegiatan"],
-    "U07": [r"bentuk\s+(dan\s+jenis\s+)?kegiatan"],
-    "U08": [r"waktu\s+dan\s+tempat", r"waktu.{0,20}tempat\s+pelaksanaan"],
-    "U09": [r"peserta\s+kegiatan", r"peserta"],
-    "U10": [r"struktur\s+kepanitiaan", r"susunan\s+kepanitiaan", r"susunan\s+panitia"],
-    "U11": [r"susunan\s+acara", r"rundown\s+acara", r"jadwal\s+acara"],
+    "U05": [
+        r"indikator\s+keberhasilan",
+        r"indicator\s+of\s+success",
+        r"success\s+indicators?",
+        r"key\s+performance\s+indicators?",
+    ],
+    "U06": [r"nama\s+kegiatan", r"name\s+of\s+event", r"event\s+name", r"name\s*$"],
+    "U07": [
+        r"bentuk\s+(dan\s+jenis\s+)?kegiatan",
+        r"form\s+of\s+event",
+        r"type\s+of\s+event",
+        r"event\s+form",
+    ],
+    "U08": [
+        r"waktu\s+dan\s+tempat",
+        r"waktu.{0,20}tempat\s+pelaksanaan",
+        r"time\s+and\s+place",
+        r"date\s+and\s+(place|venue)",
+    ],
+    "U09": [r"peserta\s+kegiatan", r"peserta", r"participants?"],
+    "U10": [
+        r"struktur\s+kepanitiaan",
+        r"susunan\s+kepanitiaan",
+        r"susunan\s+panitia",
+        r"committee\s+structure",
+        r"organizing\s+committee",
+    ],
+    "U11": [
+        r"susunan\s+acara",
+        r"rundown\s+acara",
+        r"jadwal\s+acara",
+        r"rundown",
+        r"event\s+schedule",
+    ],
     "U12": [
         r"perencanaan\s+keuangan",
         r"rencana\s+anggaran",
         r"anggaran\s+(biaya|dana)",
         r"rincian\s+anggaran",
+        r"budget(ing)?\s+plan",
+        r"budget",
     ],
-    "U13": [r"penutup", r"pengesahan"],
+    "U13": [r"penutup", r"pengesahan", r"closing", r"approval"],
     "U14": [
         r"lampiran\s+(i|1)(?!\w)",
         r"formulir\s+manajemen\s+risiko",
         r"manajemen\s+risiko",
+        r"attachment\s+(i|1)(?!\w)",
+        r"risk\s+management\s+form",
     ],
     "U15": [
         r"lampiran\s+(ii|2)(?!\w)",
         r"timeline",
         r"jadwal\s+kegiatan\s*\(?\s*timeline\s*\)?",
+        r"attachment\s+(ii|2)(?!\w)",
     ],
 }
 
