@@ -15,15 +15,13 @@ dari Pedoman v0.2. Peneliti WAJIB mengkalibrasi ulang tabel ini terhadap
 teks asli Pedoman v0.2 dan sampel proposal riil sebelum dipakai untuk hasil
 skripsi — jangan anggap tabel ini sudah final.
 
-Cakupan Bahasa Indonesia vs Inggris (2026-09-19): ruang lingkup penelitian
-ini WAJIB proposal berbahasa Indonesia -- proposal berbahasa Inggris
-sengaja dipertahankan HANYA sebagai instans uji pelanggaran BHS-01, bukan
-target utama. Karena itu, frasa kunci Bahasa Inggris di `_KATA_KUNCI_UNIT`
-ditambahkan sebagai perbaikan sekunder (supaya proposal EN tidak gagal
-segmentasi TOTAL dan tetap punya teks yang bisa dibaca di jalur JC/JP),
-BUKAN dikalibrasi seketat padanan Indonesia-nya -- cakupannya cuma
-berdasar pola dari segelintir proposal EN yang sempat diperiksa peneliti,
-jangan dianggap selengkap/seandal versi Indonesia.
+Cakupan bahasa: fokus penelitian ini adalah proposal berbahasa Indonesia;
+proposal berbahasa Inggris dipertahankan sebagai instans uji pelanggaran
+BHS-01. `_KATA_KUNCI_UNIT` mencakup padanan kata kunci untuk kedua bahasa,
+diambil dari pola heading pada proposal Inggris yang sempat diperiksa
+peneliti (2026-09-19) -- sama seperti versi Indonesia, tetap WAJIB
+dikalibrasi ulang terhadap sampel yang lebih luas sebelum dipakai untuk
+hasil skripsi.
 
 Asumsi:
 - Input `teks_terstruktur` adalah dict keluaran `ekstrak_docx`/`ekstrak_pdf`
